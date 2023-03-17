@@ -268,9 +268,10 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
                 if sender == bot.user :
                     return
+                nonlocal message, history_for_model, history_for_gradio, chatbot
 
-                nonlocal message, nonlocal history_for_model, nonlocal history_for_gradio, nonlocal chatbot = _run_inference(nonlocal history_for_model, nonlocal history_for_gradio, nonlocal message,
-                            nonlocal generation_settings, nonlocal *char_setting_states)
+                message, history_for_model, history_for_gradio, chatbot = _run_inference(history_for_model, history_for_gradio, message,
+                            generation_settings, *char_setting_states)
 
                 bot_response = chatbot[-1]
 

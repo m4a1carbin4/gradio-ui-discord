@@ -22,7 +22,6 @@ idna==3.4
 multidict==6.0.4
 pafy==0.5.5
 prompt-toolkit==1.0.14
-protobuf==4.21.12
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycodestyle==2.10.0
