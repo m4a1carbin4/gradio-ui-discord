@@ -68,7 +68,7 @@ def main(server_port: int,
 
         return bot_message
 
-    ui = build_gradio_ui_for(inference_fn, for_kobold=koboldai_url is not None)
+    ui = build_gradio_ui_for(inference_fn, for_kobold=None)
     ui.launch(server_port=server_port, share=share_gradio_link)
 
 
