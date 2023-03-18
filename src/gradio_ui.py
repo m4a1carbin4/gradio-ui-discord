@@ -255,7 +255,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
             current_bot = None
 
-            def make_bot_start(token, history_for_model, history_for_gradio,
+            async def make_bot_start(token, history_for_model, history_for_gradio,
                                 generation_settings, *char_setting_states):
                 
                 nonlocal current_bot
