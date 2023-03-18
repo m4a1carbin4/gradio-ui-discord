@@ -283,7 +283,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
                 nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat
 
-                discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat = _run_inference(discord_history_for_model , discord_history_for_gradio , msg.content, discord_generation_settings,(discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue))
+                discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat = _run_inference(discord_history_for_model , discord_history_for_gradio , msg.content, discord_generation_settings,[discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue])
 
                 bot_response = discord_chat[-1]
 
