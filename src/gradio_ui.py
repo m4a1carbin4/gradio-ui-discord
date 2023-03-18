@@ -248,8 +248,13 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             with gr.Row():
 
                 def _history_wrapper():
-                    nonlocal charfile, history_for_model, history_for_gradio
+                    nonlocal chatfile, history_for_model, history_for_gradio
                     history_for_model, history_for_gradio, ptr = _load_chat_history(chatfile, *char_setting_states)
+
+                def _save_wrapper():
+                    nonlocal history_for_model , chatfile
+                    chatfile = _save_chat_history(history_for_model, *char_setting_states)
+
 
                 with gr.Column():
                     chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
@@ -260,7 +265,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                     )
 
                     save_char_btn = gr.Button(value="Save Conversation History")
-                    save_char_btn.click(_save_chat_history, inputs=[history_for_model, *char_setting_states], outputs=[chatfile])
+                    save_char_btn.click(_save_wrapper, inputs=[], outputs=[])
                 with gr.Column():
                     gr.Markdown("""
                         ### To save a chat
