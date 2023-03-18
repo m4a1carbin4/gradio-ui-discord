@@ -50,7 +50,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             '''
             updated_settings = {**original_settings, param_name: new_value}
             logging.debug("Generation settings updated to: `%s`",
-                         updated_settings)
+                          updated_settings)
             return updated_settings
 
         def _run_inference(
@@ -78,7 +78,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             inference_result_for_gradio = inference_result \
                 .replace(f"{char_name}:", f"**{char_name}:**") \
                 .replace("<USER>", user_name) \
-                .replace("\n", "<br>") # Gradio chatbot component can display br tag as linebreak
+                .replace("\n", "<br>")  # Gradio chatbot component can display br tag as linebreak
 
             model_history.append(f"You: {user_input}")
             model_history.append(inference_result)
@@ -138,7 +138,8 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                     char_name = bot_turn.split(":")[0]
                 # Format the user and bot utterances
                 user_turn = human_turn.replace("You: ", "")
-                bot_turn = bot_turn.replace(f"{char_name}:", f"**{char_name}:**")
+                bot_turn = bot_turn.replace(
+                    f"{char_name}:", f"**{char_name}:**")
 
                 # Somebody released a script on /g/ which tries to convert CAI dump logs
                 # to Pygmalion character settings and chats. The anonymization of the dumps, however, means that
@@ -146,8 +147,10 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 # This therefore accomodates users of that script, so that [NAME_IN_MESSAGE_REDACTED] doesn't have
                 # to be manually edited in the conversation JSON.
                 # The model shouldn't generate [NAME_IN_MESSAGE_REDACTED] by itself.
-                user_turn = user_turn.replace("[NAME_IN_MESSAGE_REDACTED]", user_name)
-                bot_turn = bot_turn.replace("[NAME_IN_MESSAGE_REDACTED]", user_name)
+                user_turn = user_turn.replace(
+                    "[NAME_IN_MESSAGE_REDACTED]", user_name)
+                bot_turn = bot_turn.replace(
+                    "[NAME_IN_MESSAGE_REDACTED]", user_name)
 
                 new_gradio_history.append((user_turn, bot_turn))
 
@@ -166,7 +169,8 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             charfile.upload(
                 fn=_char_file_upload,
                 inputs=[charfile, history_for_model, history_for_gradio],
-                outputs=[history_for_model, history_for_gradio, chatbot, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
+                outputs=[history_for_model, history_for_gradio, chatbot, char_name,
+                         char_persona, char_greeting, world_scenario, example_dialogue]
             )
 
             message = gr.Textbox(
@@ -218,15 +222,19 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
             with gr.Row():
                 with gr.Column():
-                    chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
+                    chatfile = gr.File(type="binary", file_types=[
+                                       ".json"], interactive=True)
                     chatfile.upload(
                         fn=_load_chat_history,
                         inputs=[chatfile, *char_setting_states],
-                        outputs=[history_for_model, history_for_gradio, chatbot]
+                        outputs=[history_for_model,
+                                 history_for_gradio, chatbot]
                     )
 
-                    save_char_btn = gr.Button(value="Save Conversation History")
-                    save_char_btn.click(_save_chat_history, inputs=[history_for_model, *char_setting_states], outputs=[chatfile])
+                    save_char_btn = gr.Button(
+                        value="Save Conversation History")
+                    save_char_btn.click(_save_chat_history, inputs=[
+                                        history_for_model, *char_setting_states], outputs=[chatfile])
                 with gr.Column():
                     gr.Markdown("""
                         ### To save a chat
@@ -236,80 +244,32 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                         **Remember to fill out/load up your character definitions before resuming a chat!**
                     """)
 
-
-
         with gr.Tab("Generation Settings"):
             _build_generation_settings_ui(
                 state=generation_settings,
                 fn=_update_generation_settings,
                 for_kobold=for_kobold,
             )
-        
+
         with gr.Tab("Talk with discord"):
-            intents = discord.Intents.default()
-            intents.message_content = True
 
-            discord_history_for_model = None 
-            discord_history_for_gradio = None 
-            discord_generation_settings = None 
+            current_bot = None
 
-            discord_char_name= None 
-            discord__user_name= None 
-            discord_char_persona= None 
-            discord_char_greeting= None 
-            discord_world_scenario= None 
-            discord_example_dialogue= None 
-
-            discord_message=None
-            discord_chat=None
-
-            bot = commands.Bot(
-                command_prefix=commands.when_mentioned_or("!"),
-                description='Relatively simple music bot example',
-                intents=intents,
-            )
-
-            @bot.event
-            async def on_ready():
-                print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-                print('------')
-
-            @bot.event
-            async def on_message(msg):
-                sender = msg.author
-
-                if sender == bot.user :
-                    return
-
-                nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat
-
-                discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat = _run_inference(discord_history_for_model , discord_history_for_gradio , msg.content, discord_generation_settings,discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue)
-
-                bot_response = discord_chat[-1]
-
-                await msg.channel.send(bot_response)
-
-            async def start_bot(token,history_for_model, history_for_gradio,
-                        generation_settings, *char_setting_states):
-
-                nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat , discord_generation_settings , discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue
-
-                discord_history_for_model = history_for_model 
-                discord_history_for_gradio = history_for_gradio 
-                discord_generation_settings = generation_settings
-
-                discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue = char_setting_states
-
-                async with bot:
-                    #await bot.add_cog(Music(bot))
-                    await bot.start(token)
+            def make_bot_start(token, history_for_model, history_for_gradio,
+                                generation_settings, *char_setting_states):
+                
+                nonlocal current_bot
+                current_bot = Discord_bot(history_for_model, history_for_gradio,
+                                generation_settings, *char_setting_states,_run_inference,_regenerate,_undo_last_exchange)
+                
+                current_bot.start_bot(token=token)
 
             with gr.Row():
                 with gr.Column():
                     with gr.Accordion(label="how to make a bot", open=True):
                         gr.Markdown("""
                         Here's a basic rundown of each setting:
-                        - 1.open Developer portal and log in : [open DEVELOPER PORTAL](https://discord.com/developers/applications){:target="_blank"} 
+                        - 1.open Developer portal and log in : [open DEVELOPER PORTAL](https://discord.com/developers/applications){:target="_blank"}
                         - 2.make new Application : Create a new application (you can also use existing applications.)
                         - 3.make a bot : get into the Bot setting tab and Add bot. (Set the icon image name, etc.)
                         - 4.Set Permissions : It is recommended to grant administrator Permissions by default, becasue it is currently under development, but at least permission for message transmission is required.
@@ -320,25 +280,30 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 with gr.Column():
                     discord_token = gr.Textbox(label="discord_token")
                     bot_make = gr.Button("make Bot")
-                    bot_make.click(fn=start_bot,inputs=[discord_token,history_for_model, history_for_gradio,
-                        generation_settings, *char_setting_states], outputs=[])
-                
+                    bot_make.click(fn=make_bot_start, inputs=[discord_token, history_for_model, history_for_gradio,
+                                                         generation_settings, *char_setting_states], outputs=[])
+
             with gr.Row():
                 with gr.Column():
 
                     def _discord_save_chat(chatfile):
-                        chatfile = _save_chat_history(discord_history_for_model, discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue)
+                        chatfile = _save_chat_history(current_bot.discord_history_for_model, current_bot.discord_char_name, current_bot.discord__user_name,
+                                                      current_bot.discord_char_persona, current_bot.discord_char_greeting, current_bot.discord_world_scenario, current_bot.discord_example_dialogue)
                         return chatfile
 
-                    discord_chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
+                    discord_chatfile = gr.File(type="binary", file_types=[
+                                               ".json"], interactive=True)
                     discord_chatfile.upload(
                         fn=_load_chat_history,
                         inputs=[discord_chatfile, *char_setting_states],
-                        outputs=[history_for_model, history_for_gradio, chatbot]
+                        outputs=[history_for_model,
+                                 history_for_gradio, chatbot]
                     )
 
-                    save_char_btn = gr.Button(value="Save discord Conversation History")
-                    save_char_btn.click(_discord_save_chat, inputs=[discord_chatfile], outputs=[discord_chatfile])
+                    save_char_btn = gr.Button(
+                        value="Save discord Conversation History")
+                    save_char_btn.click(_discord_save_chat, inputs=[
+                                        discord_chatfile], outputs=[discord_chatfile])
 
                 with gr.Column():
                     gr.Markdown("""
@@ -349,14 +314,15 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                         **Remember to fill out/load up your character definitions before resuming a chat!**
                     """)
 
-
     return interface
+
 
 def _char_file_upload(file_obj, history_model, history_gradio):
     file_data = json.loads(file_obj.decode('utf-8'))
     char_name = file_data["char_name"]
     greeting = file_data["char_greeting"]
-    empty_history = not history_model or (len(history_model) <= 2 and history_model[0] == '')
+    empty_history = not history_model or (
+        len(history_model) <= 2 and history_model[0] == '')
     if empty_history and char_name and greeting:
         # if chat history is empty so far, and there is a character greeting, add character greeting to the chat
         s = f'{char_name}: {greeting}'
@@ -365,11 +331,13 @@ def _char_file_upload(file_obj, history_model, history_gradio):
         history_gradio = [('', t)]
     return history_model, history_gradio, history_gradio, char_name, file_data["char_persona"], greeting, file_data["world_scenario"], file_data["example_dialogue"]
 
+
 def _build_character_settings_ui():
 
     def char_file_create(char_name, char_persona, char_greeting, world_scenario, example_dialogue):
         with open(char_name + ".json", "w") as f:
-            f.write(json.dumps({"char_name": char_name, "char_persona": char_persona, "char_greeting": char_greeting, "world_scenario": world_scenario, "example_dialogue": example_dialogue}))
+            f.write(json.dumps({"char_name": char_name, "char_persona": char_persona, "char_greeting": char_greeting,
+                    "world_scenario": world_scenario, "example_dialogue": example_dialogue}))
         return char_name + ".json"
 
     with gr.Column():
@@ -385,26 +353,22 @@ def _build_character_settings_ui():
 
         char_persona = gr.Textbox(
             label="Character Persona",
-            placeholder=
-            "Describe the character's persona here. Think of this as CharacterAI's description + definitions in one box.",
+            placeholder="Describe the character's persona here. Think of this as CharacterAI's description + definitions in one box.",
             lines=4,
         )
         char_greeting = gr.Textbox(
             label="Character Greeting",
-            placeholder=
-            "Write the character's greeting here. They will say this verbatim as their first response.",
+            placeholder="Write the character's greeting here. They will say this verbatim as their first response.",
             lines=3,
         )
 
         world_scenario = gr.Textbox(
             label="Scenario",
-            placeholder=
-            "Optionally, describe the starting scenario in a few short sentences.",
+            placeholder="Optionally, describe the starting scenario in a few short sentences.",
         )
         example_dialogue = gr.Textbox(
             label="Example Chat",
-            placeholder=
-            "Optionally, write in an example chat here. This is useful for showing how the character should behave, for example.",
+            placeholder="Optionally, write in an example chat here. This is useful for showing how the character should behave, for example.",
             lines=4,
         )
 
@@ -413,7 +377,8 @@ def _build_character_settings_ui():
                 charfile = gr.File(type="binary", file_types=[".json"])
 
                 save_char_btn = gr.Button(value="Generate Character File")
-                save_char_btn.click(char_file_create, inputs=[char_name, char_persona, char_greeting, world_scenario, example_dialogue], outputs=[charfile])
+                save_char_btn.click(char_file_create, inputs=[
+                                    char_name, char_persona, char_greeting, world_scenario, example_dialogue], outputs=[charfile])
             with gr.Column():
                 gr.Markdown("""
                     ### To save a character
@@ -542,3 +507,74 @@ def _build_generation_settings_ui(state, fn, for_kobold):
         - `penalty_alpha`: The alpha coefficient when using contrastive search.
         Some settings might not show up depending on which inference backend is being used.
         """)
+
+
+class Discord_bot():
+
+    def __init__(self, history_for_model, history_for_gradio, generation_settings, *char_setting_states, fn,re,un) -> None:
+        self.intents = discord.Intents.default()
+        self.intents.message_content = True
+
+        self.discord_history_for_model = history_for_model
+        self.discord_history_for_gradio = history_for_gradio
+        self.discord_generation_settings = generation_settings
+
+        self.discord_char_name, self.discord__user_name, self.discord_char_persona, self.discord_char_greeting, self.discord_world_scenario, self.discord_example_dialogue = char_setting_states
+
+        self.discord_message = None
+        self.discord_chat = None
+        self.fn = fn
+        self.re = re
+        self.un = un
+
+        self.bot = commands.Bot(
+            command_prefix=commands.when_mentioned_or("!"),
+            description='Relatively simple music bot example',
+            intents=self.intents,
+        )
+
+    def _init_event(self):
+
+        @self.bot.event
+        async def on_ready():
+            print(f'Logged in as {self.bot.user} (ID: {self.bot.user.id})')
+            print('------')
+
+        @self.bot.event
+        async def on_message(msg):
+            sender = msg.author
+
+            if sender == self.bot.user:
+                return
+
+            self.discord_message, self.discord_history_for_model, self.discord_history_for_gradio, self.discord_chat = self.fn(
+                self.discord_history_for_model, self.discord_history_for_gradio, msg.content, self.discord_generation_settings, self.discord_char_name, self.discord__user_name, self.discord_char_persona, self.discord_char_greeting, self.discord_world_scenario, self.discord_example_dialogue)
+
+            bot_response = self.discord_chat[-1]
+
+            await msg.channel.send(bot_response)
+
+        @self.bot.command(name='re')
+        async def re(ctx):
+    
+            self.discord_message, self.discord_history_for_model, self.discord_history_for_gradio, self.discord_chat = self.re(
+                self.discord_history_for_model, self.discord_history_for_gradio, self.discord_generation_settings, self.discord_char_name, self.discord__user_name, self.discord_char_persona, self.discord_char_greeting, self.discord_world_scenario, self.discord_example_dialogue)
+
+            bot_response = "regeneration : " + str(self.discord_chat[-1])
+
+            await ctx.send(bot_response)
+
+        @self.bot.command(name="un")
+        async def un(ctx):
+            self.discord_history_for_model, self.discord_history_for_gradio, self.discord_chat = self.un(self.discord_history_for_model, self.discord_history_for_gradio)
+
+            bot_response = "your last message and my response has been deleted."
+
+            await ctx.send(bot_response)
+
+
+    async def start_bot(self,token):
+
+        async with self.bot:
+            # await bot.add_cog(Music(bot))
+            await self.bot.start(token)
