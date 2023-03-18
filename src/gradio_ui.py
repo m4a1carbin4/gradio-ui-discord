@@ -3,7 +3,6 @@ import logging
 import discord
 
 import gradio as gr
-from discord_main import Music
 from discord.ext import commands
 
 
