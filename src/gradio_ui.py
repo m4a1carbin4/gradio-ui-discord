@@ -289,7 +289,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
             async def start_bot(token):
                 async with bot:
-                    await bot.add_cog(Music(bot))
+                    #await bot.add_cog(Music(bot))
                     await bot.start(token)
 
             with gr.Row():
