@@ -163,6 +163,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                     color_map=("#326efd", "#212528"))
 
             char_name, _user_name, char_persona, char_greeting, world_scenario, example_dialogue = char_setting_states
+
             charfile.upload(
                 fn=_char_file_upload,
                 inputs=[charfile, history_for_model, history_for_gradio],
@@ -249,6 +250,20 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             intents = discord.Intents.default()
             intents.message_content = True
 
+            discord_history_for_model = None 
+            discord_history_for_gradio = None 
+            discord_generation_settings = None 
+
+            discord_char_name= None 
+            discord__user_name= None 
+            discord_char_persona= None 
+            discord_char_greeting= None 
+            discord_world_scenario= None 
+            discord_example_dialogue= None 
+
+            discord_message=None
+            discord_chat=None
+
             bot = commands.Bot(
                 command_prefix=commands.when_mentioned_or("!"),
                 description='Relatively simple music bot example',
@@ -266,26 +281,26 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
                 if sender == bot.user :
                     return
-                nonlocal message, history_for_model, history_for_gradio, chatbot
 
-                get_result = gr.Interface(
-                    fn=_run_inference,
-                    inputs=[
-                        history_for_model, history_for_gradio, msg.content,
-                        generation_settings, *char_setting_states
-                    ],
-                    outputs=[
-                        message, history_for_model, history_for_gradio, chatbot
-                    ],
-                )
+                nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat
 
-                get_result.launch()
+                discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat = _run_inference(discord_history_for_model , discord_history_for_gradio , msg.content, discord_generation_settings,(discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue))
 
-                bot_response = chatbot[-1]
+                bot_response = discord_chat[-1]
 
                 await msg.channel.send(bot_response)
 
-            async def start_bot(token):
+            async def start_bot(token,history_for_model, history_for_gradio,
+                        generation_settings, *char_setting_states):
+
+                nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat , discord_generation_settings , discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue
+
+                discord_history_for_model = history_for_model 
+                discord_history_for_gradio = history_for_gradio 
+                discord_generation_settings = generation_settings
+
+                discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue = char_setting_states
+
                 async with bot:
                     #await bot.add_cog(Music(bot))
                     await bot.start(token)
@@ -306,7 +321,8 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 with gr.Column():
                     discord_token = gr.Textbox(label="discord_token")
                     bot_make = gr.Button("make Bot")
-                    bot_make.click(fn=start_bot,inputs=[discord_token], outputs=[])
+                    bot_make.click(fn=start_bot,inputs=[discord_token,history_for_model, history_for_gradio,
+                        generation_settings, *char_setting_states], outputs=[])
 
 
     return interface
