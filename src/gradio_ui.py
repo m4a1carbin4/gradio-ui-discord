@@ -162,7 +162,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
             char_name, _user_name, char_persona, char_greeting, world_scenario, example_dialogue = char_setting_states
             charfile.upload(
-                fn=_upload_wrapper
+                fn=_upload_wrapper,inputs=[],outputs=[]
             )
 
             intents = discord.Intents.default()
