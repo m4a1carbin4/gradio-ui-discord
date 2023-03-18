@@ -35,8 +35,8 @@ def build_gradio_ui_for(inference_fn, for_kobold):
     the initial version that inspired this.
     '''
     with gr.Blocks(title="Pygmalion", analytics_enabled=False) as interface:
-        history_for_gradio = gr.State([])
-        history_for_model = gr.State([])
+        history_for_gradio = []
+        history_for_model = []
         generation_settings = gr.State(
             get_generation_defaults(for_kobold=for_kobold))
 
@@ -157,6 +157,115 @@ def build_gradio_ui_for(inference_fn, for_kobold):
         with gr.Tab("Character Settings") as settings_tab:
             charfile, char_setting_states = _build_character_settings_ui()
 
+            char_name, _user_name, char_persona, char_greeting, world_scenario, example_dialogue = char_setting_states
+            charfile.upload(
+                fn=_char_file_upload,
+                inputs=[charfile, history_for_model, history_for_gradio],
+                outputs=[history_for_model, history_for_gradio, chatbot, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
+            )
+
+            intents = discord.Intents.default()
+            intents.message_content = True
+            
+            last_msg = None
+
+            bot = commands.Bot(
+                command_prefix=commands.when_mentioned_or("!"),
+                description='Relatively simple AI chat bot example',
+                intents=intents,
+            )
+
+            @bot.event
+            async def on_ready():
+                print(f'Logged in as {bot.user} (ID: {bot.user.id})')
+                print('------')
+
+            @bot.event
+            async def on_message(msg):
+                sender = msg.author
+
+                if sender == bot.user :
+                    return
+                nonlocal history_for_model, history_for_gradio, last_msg
+
+                message, history_for_model, history_for_gradio, chatbot = _run_inference(history_for_model, history_for_gradio, msg.content,
+                        generation_settings, *char_setting_states)
+
+                bot_response = chatbot[-1]
+
+                await msg.channel.send(bot_response)
+
+            @bot.command(name='re')
+            async def regenerate_msg(ctx):
+                
+                nonlocal history_for_model, history_for_gradio
+
+                message, history_for_model, history_for_gradio, chatbot = _regenerate(history_for_model, history_for_gradio,
+                        generation_settings, *char_setting_states)
+
+                bot_response = chatbot[-1]
+
+                await ctx.send(bot_response)
+
+            @bot.command(name='del')
+            async def del_msg(ctx):
+                
+                nonlocal history_for_model, history_for_gradio
+
+                history_for_model, history_for_gradio, chatbot = _undo_last_exchange(history_for_model, history_for_gradio,
+                        generation_settings, *char_setting_states)
+
+                bot_response = chatbot[-1]
+
+                await ctx.send("del last message clear")
+
+            async def start_bot(token):
+                async with bot:
+                    #await bot.add_cog(Music(bot))
+                    await bot.start(token)
+
+            with gr.Row():
+                with gr.Column():
+                    with gr.Accordion(label="how to make a bot", open=True):
+                        gr.Markdown("""
+                        Here's a basic rundown of each setting:
+
+                        - 1.open Developer portal and log in : [open DEVELOPER PORTAL](https://discord.com/developers/applications){:target="_blank"} 
+                        - 2.make new Application : Create a new application (you can also use existing applications.)
+                        - 3.make a bot : get into the Bot setting tab and Add bot. (Set the icon image name, etc.)
+                        - 4.Set Permissions : It is recommended to grant administrator Permissions by default, becasue it is currently under development, but at least permission for message transmission is required.
+                        - 5.Get Token : Copy the bot token value from within the bot setup window.
+                        - 6.All Done : pasting bot token in discord_token and press start bot button.
+
+                        """)
+
+                with gr.Column():
+                    discord_token = gr.Textbox(label="discord_token")
+                    bot_make = gr.Button("make Bot")
+                    bot_make.click(fn=start_bot,inputs=[discord_token], outputs=[])
+
+            with gr.Row():
+                with gr.Column():
+                    chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
+                    chatfile.upload(
+                        fn=_load_chat_history,
+                        inputs=[chatfile, *char_setting_states],
+                        outputs=[history_for_model, history_for_gradio, chatbot]
+                    )
+
+                    save_char_btn = gr.Button(value="Save Conversation History")
+                    save_char_btn.click(_save_chat_history, inputs=[history_for_model, *char_setting_states], outputs=[chatfile])
+                with gr.Column():
+                    gr.Markdown("""
+                        ### To save a chat
+                        Click "Save Conversation History". The file will appear above the button and you can click to download it.
+
+                        ### To load a chat
+                        Drag a valid .json file onto the upload box, or click the box to browse.
+
+                        **Remember to fill out/load up your character definitions before resuming a chat!**
+                    """)
+
         with gr.Tab("Chat Window"):
             chatbot = gr.Chatbot(
                 label="Your conversation will show up here").style(
@@ -184,133 +293,12 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 ],
             )
 
-            with gr.Row():
-                send_btn = gr.Button("Send", variant="primary")
-                send_btn.click(
-                    fn=_run_inference,
-                    inputs=[
-                        history_for_model, history_for_gradio, message,
-                        generation_settings, *char_setting_states
-                    ],
-                    outputs=[
-                        message, history_for_model, history_for_gradio, chatbot
-                    ],
-                )
-
-                regenerate_btn = gr.Button("Regenerate")
-                regenerate_btn.click(
-                    fn=_regenerate,
-                    inputs=[
-                        history_for_model, history_for_gradio,
-                        generation_settings, *char_setting_states
-                    ],
-                    outputs=[
-                        message, history_for_model, history_for_gradio, chatbot
-                    ],
-                )
-
-                undo_btn = gr.Button("Undo last exchange")
-                undo_btn.click(
-                    fn=_undo_last_exchange,
-                    inputs=[history_for_model, history_for_gradio],
-                    outputs=[history_for_model, history_for_gradio, chatbot],
-                )
-
-            with gr.Row():
-                with gr.Column():
-                    chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
-                    chatfile.upload(
-                        fn=_load_chat_history,
-                        inputs=[chatfile, *char_setting_states],
-                        outputs=[history_for_model, history_for_gradio, chatbot]
-                    )
-
-                    save_char_btn = gr.Button(value="Save Conversation History")
-                    save_char_btn.click(_save_chat_history, inputs=[history_for_model, *char_setting_states], outputs=[chatfile])
-                with gr.Column():
-                    gr.Markdown("""
-                        ### To save a chat
-                        Click "Save Conversation History". The file will appear above the button and you can click to download it.
-
-                        ### To load a chat
-                        Drag a valid .json file onto the upload box, or click the box to browse.
-
-                        **Remember to fill out/load up your character definitions before resuming a chat!**
-                    """)
-
-
-
         with gr.Tab("Generation Settings"):
             _build_generation_settings_ui(
                 state=generation_settings,
                 fn=_update_generation_settings,
                 for_kobold=for_kobold,
             )
-        
-        with gr.Tab("Talk with discord"):
-            intents = discord.Intents.default()
-            intents.message_content = True
-
-            bot = commands.Bot(
-                command_prefix=commands.when_mentioned_or("!"),
-                description='Relatively simple music bot example',
-                intents=intents,
-            )
-
-            @bot.event
-            async def on_ready():
-                print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-                print('------')
-
-            @bot.event
-            async def on_message(msg):
-                sender = msg.author
-
-                if sender == bot.user :
-                    return
-                nonlocal message, history_for_model, history_for_gradio, chatbot
-
-                get_result = gr.Interface(
-                    fn=_run_inference,
-                    inputs=[
-                        history_for_model, history_for_gradio, msg.content,
-                        generation_settings, *char_setting_states
-                    ],
-                    outputs=[
-                        message, history_for_model, history_for_gradio, chatbot
-                    ],
-                )
-
-                get_result.launch()
-
-                bot_response = chatbot[-1]
-
-                await msg.channel.send(bot_response)
-
-            async def start_bot(token):
-                async with bot:
-                    #await bot.add_cog(Music(bot))
-                    await bot.start(token)
-
-            with gr.Row():
-                with gr.Column():
-                    with gr.Accordion(label="how to make a bot", open=True):
-                        gr.Markdown("""
-                        Here's a basic rundown of each setting:
-
-                        - 1.open Developer portal and log in : [open DEVELOPER PORTAL](https://discord.com/developers/applications){:target="_blank"} 
-                        - 2.make new Application : Create a new application (you can also use existing applications.)
-                        - 3.make a bot : get into the Bot setting tab and Add bot. (Set the icon image name, etc.)
-                        - 4.Set Permissions : It is recommended to grant administrator Permissions by default, becasue it is currently under development, but at least permission for message transmission is required.
-                        - 5.Get Token : Copy the bot token value from within the bot setup window.
-                        - 6.All Done : pasting bot token in discord_token and press start bot button.
-
-                        """)
-
-                with gr.Column():
-                    discord_token = gr.Textbox(label="discord_token")
-                    bot_make = gr.Button("make Bot")
-                    bot_make.click(fn=start_bot,inputs=[discord_token], outputs=[])
 
 
     return interface
