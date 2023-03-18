@@ -323,14 +323,22 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                     bot_make.click(fn=start_bot,inputs=[discord_token,history_for_model, history_for_gradio,
                         generation_settings, *char_setting_states], outputs=[])
                 
+            with gr.Row():
                 with gr.Column():
 
                     def _discord_save_chat(chatfile):
-                        chatfile = _save_chat_history(history_for_model, *char_setting_states)
+                        chatfile = _save_chat_history(discord_history_for_model, discord_char_name,discord__user_name,discord_char_persona,discord_char_greeting,discord_world_scenario,discord_example_dialogue)
                         return chatfile
 
+                    discord_chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
+                    discord_chatfile.upload(
+                        fn=_load_chat_history,
+                        inputs=[discord_chatfile, *char_setting_states],
+                        outputs=[history_for_model, history_for_gradio, chatbot]
+                    )
+
                     save_char_btn = gr.Button(value="Save discord Conversation History")
-                    save_char_btn.click(_discord_save_chat, inputs=[chatfile], outputs=[chatfile])
+                    save_char_btn.click(_discord_save_chat, inputs=[discord_chatfile], outputs=[discord_chatfile])
 
                 with gr.Column():
                     gr.Markdown("""
