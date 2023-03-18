@@ -262,7 +262,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 current_bot = Discord_bot(history_for_model, history_for_gradio,
                                 generation_settings, _run_inference,_regenerate,_undo_last_exchange,*char_setting_states)
                 
-                current_bot.start_bot(token=token)
+                await current_bot.start_bot(token=token)
 
             with gr.Row():
                 with gr.Column():
