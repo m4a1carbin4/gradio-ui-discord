@@ -260,7 +260,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                 
                 nonlocal current_bot
                 current_bot = Discord_bot(history_for_model, history_for_gradio,
-                                generation_settings, *char_setting_states,_run_inference,_regenerate,_undo_last_exchange)
+                                generation_settings, _run_inference,_regenerate,_undo_last_exchange,*char_setting_states)
                 
                 current_bot.start_bot(token=token)
 
@@ -511,7 +511,7 @@ def _build_generation_settings_ui(state, fn, for_kobold):
 
 class Discord_bot():
 
-    def __init__(self, history_for_model, history_for_gradio, generation_settings, *char_setting_states, fn,re,un) -> None:
+    def __init__(self, history_for_model, history_for_gradio, generation_settings, fn,re,un,*char_setting_states) -> None:
         self.intents = discord.Intents.default()
         self.intents.message_content = True
 
