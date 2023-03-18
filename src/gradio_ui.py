@@ -246,12 +246,17 @@ def build_gradio_ui_for(inference_fn, for_kobold):
                     bot_make.click(fn=start_bot,inputs=[discord_token], outputs=[])
 
             with gr.Row():
+
+                def _history_wrapper():
+                    nonlocal charfile, history_for_model, history_for_gradio
+                    history_for_model, history_for_gradio, ptr = _load_chat_history(chatfile, *char_setting_states)
+
                 with gr.Column():
                     chatfile = gr.File(type="binary", file_types=[".json"], interactive=True)
                     chatfile.upload(
-                        fn=_load_chat_history,
-                        inputs=[chatfile, *char_setting_states],
-                        outputs=[history_for_model, history_for_gradio, chatbot]
+                        fn=_history_wrapper,
+                        inputs=[],
+                        outputs=[]
                     )
 
                     save_char_btn = gr.Button(value="Save Conversation History")
@@ -266,33 +271,6 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
                         **Remember to fill out/load up your character definitions before resuming a chat!**
                     """)
-
-        with gr.Tab("Chat Window"):
-            chatbot = gr.Chatbot(
-                label="Your conversation will show up here").style(
-                    color_map=("#326efd", "#212528"))
-
-            char_name, _user_name, char_persona, char_greeting, world_scenario, example_dialogue = char_setting_states
-            charfile.upload(
-                fn=_char_file_upload,
-                inputs=[charfile, history_for_model, history_for_gradio],
-                outputs=[history_for_model, history_for_gradio, chatbot, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
-            )
-
-            message = gr.Textbox(
-                label="Your message (hit Enter to send)",
-                placeholder="Write a message...",
-            )
-            message.submit(
-                fn=_run_inference,
-                inputs=[
-                    history_for_model, history_for_gradio, message,
-                    generation_settings, *char_setting_states
-                ],
-                outputs=[
-                    message, history_for_model, history_for_gradio, chatbot
-                ],
-            )
 
         with gr.Tab("Generation Settings"):
             _build_generation_settings_ui(
