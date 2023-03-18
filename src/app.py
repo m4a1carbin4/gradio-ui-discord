@@ -38,6 +38,14 @@ def main(server_port: int,
             example_dialogue,
         ] = char_settings
 
+        print(char_name)
+        print(_user_name)
+        print(char_persona)
+        print(char_greeting)
+        print(world_scenario)
+        print(example_dialogue)
+        
+
         # If we're just starting the conversation and the character has a greeting
         # configured, return that instead. This is a workaround for the fact that
         # Gradio assumed that a chatbot cannot possibly start a conversation, so we
@@ -45,6 +53,10 @@ def main(server_port: int,
         # response to a user message.
         if len(history) == 0 and char_greeting is not None:
             return f"{char_name}: {char_greeting}"
+        
+        print(history)
+        print(user_input)
+
 
         prompt = build_prompt_for(history=history,
                                   user_message=user_input,
@@ -65,6 +77,8 @@ def main(server_port: int,
                                                      ["You", char_name])
         logger.debug("Parsed model response is: `%s`", generated_messages)
         bot_message = generated_messages[0]
+
+        print(bot_message)
 
         return bot_message
 
