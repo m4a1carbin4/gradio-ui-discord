@@ -280,6 +280,10 @@ def build_gradio_ui_for(inference_fn, for_kobold):
 
                 if sender == bot.user :
                     return
+                
+                if msg.content.startswith("!"):
+                    await bot.process_commands(message)
+                    return
 
                 nonlocal discord_message , discord_history_for_model , discord_history_for_gradio , discord_chat
 
