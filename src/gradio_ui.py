@@ -156,11 +156,13 @@ def build_gradio_ui_for(inference_fn, for_kobold):
         with gr.Tab("Character Settings") as settings_tab:
             charfile, char_setting_states = _build_character_settings_ui()
 
+            def _upload_wrapper():
+                nonlocal charfile, history_for_model, history_for_gradio, char_name, char_persona, char_greeting, world_scenario, example_dialogue
+                history_for_model, history_for_gradio, ptr, char_name, char_persona, char_greeting, world_scenario, example_dialogue = _char_file_upload(charfile, history_for_model, history_for_gradio)
+
             char_name, _user_name, char_persona, char_greeting, world_scenario, example_dialogue = char_setting_states
             charfile.upload(
-                fn=_char_file_upload,
-                inputs=[charfile, history_for_model, history_for_gradio],
-                outputs=[history_for_model, history_for_gradio, None, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
+                fn=_upload_wrapper
             )
 
             intents = discord.Intents.default()
