@@ -160,7 +160,7 @@ def build_gradio_ui_for(inference_fn, for_kobold):
             charfile.upload(
                 fn=_char_file_upload,
                 inputs=[charfile, history_for_model, history_for_gradio],
-                outputs=[history_for_model, history_for_gradio, chatbot, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
+                outputs=[history_for_model, history_for_gradio, None, char_name, char_persona, char_greeting, world_scenario, example_dialogue]
             )
 
             intents = discord.Intents.default()
